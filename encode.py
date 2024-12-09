@@ -1,6 +1,8 @@
 import heapq
 import os
 from collections import defaultdict, Counter
+from graphviz import Digraph
+
 
 class Node:
     def __init__(self, char, freq):
@@ -78,6 +80,8 @@ def huffman_coding(file_path):
     sorted_dict = dict(sorted_items)
 
     huffman_tree = build_huffman_tree(sorted_dict)
+    # 可视化霍夫曼树
+    visualize_huffman_tree(huffman_tree, 'Huffman Tree')
     huffman_codes = assign_codes_to_characters(huffman_tree)
     encoded_text = encode_text(text, huffman_codes)
 
@@ -107,11 +111,40 @@ def huffman_coding(file_path):
 
     return binary_file_path, map_file_path
 
-# 使用示例
-txt_file_path = 'raw.txt'  # 你的TXT文件路径
-binary_file, map_file = huffman_coding(txt_file_path)
-print(f'Encoded binary file: {binary_file}')
-print(f'Huffman code map file: {map_file}')
+
+
+def visualize_huffman_tree(root, tree_name):
+    """
+    可视化霍夫曼树
+    :param root: 霍夫曼树的根节点
+    :param tree_name: 树的名称
+    """
+    dot = Digraph(comment=tree_name)
+    dot.attr('node', fontname='Microsoft YaHei')  # 设置节点字体
+    dot.attr('edge', fontname='Microsoft YaHei')  # 设置边字体
+
+    def add_nodes(node, parent_name='', edge_label=''):
+        if node is not None:
+            if node.char is not None:  # 叶子节点
+                dot.node(str(id(node)), node.char)
+            else:  # 内部节点
+                dot.node(str(id(node)), str(node.freq))
+            if parent_name:
+                dot.edge(str(parent_name), str(id(node)), label=edge_label)
+            add_nodes(node.left, str(id(node)), '0')
+            add_nodes(node.right, str(id(node)), '1')
+    add_nodes(root)
+    dot.render('huffman_tree', view=True)  # 保存并打开PNG文件
+    #dot.view()
+
+
+
+
+if __name__=="__main__":
+    txt_file_path = 'raw.txt'  # 你的TXT文件路径
+    binary_file, map_file = huffman_coding(txt_file_path)
+    print(f'Encoded binary file: {binary_file}')
+    print(f'Huffman code map file: {map_file}')
 
 
 
