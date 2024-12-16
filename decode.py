@@ -1,4 +1,5 @@
 import heapq
+import struct
 from collections import defaultdict, Counter
 
 class Node:
@@ -27,16 +28,47 @@ def build_huffman_tree(frequency):
 
     return priority_queue[0]
 
-def decode(encoded_bin_file, huffman_map_file):
-    with open(huffman_map_file, 'r',encoding='utf-8') as file:
-        huffman_codes = eval(file.read())  # 将字符串形式的字典转换为字典对象
+def decode(encoded_bin_file):
+    with open(encoded_bin_file, 'rb') as binary_file:
+        # 读取前2个字节并转换为整数，以获取字符个数
+        map_count_bytes = binary_file.read(2)
+        map_count = int.from_bytes(map_count_bytes, byteorder='big')
 
-    # 构建霍夫曼树
-    char_freq = {char: freq for char, freq in huffman_codes.items() if freq}
+        # 初始化一个空字典来存储解码后的数据
+        decoded_dict = {}
+
+        # 循环读取每个字符和其频度
+        for _ in range(map_count):
+            # 读取1个字节并转换为字符
+            char_byte = binary_file.read(4)
+           # char = int.from_bytes(char_byte, byteorder='big')
+            # 将4个字节的数据转换为整数（Unicode码点）
+            char_code_point = struct.unpack('I', char_byte)[0]
+
+            # 将码点转换为对应的字符
+            char = chr(char_code_point)
+
+            # 读取2个字节并转换为频度
+            freq_bytes = binary_file.read(2)
+            freq = int.from_bytes(freq_bytes, byteorder='big')
+
+            # 将字符和频度添加到字典中
+            decoded_dict[char] = freq
+
+        # 读取4个字节并转换为整数，以获取字符个数
+        char_count_bytes = binary_file.read(4)
+        char_count = int.from_bytes(char_count_bytes, byteorder='big')
+
+        # 读取剩余的二进制数据
+        encoded_bytes = binary_file.read()
+        # 将每个字节转换为8位二进制字符串
+        encoded_text = ''.join(format(byte, '08b') for byte in encoded_bytes)
+
+
 
     # 按照值（频率）由高到低排序，值相同的情况下按键的ASCII码排序
     sorted_items = sorted(
-    char_freq.items(),
+    decoded_dict.items(),
     key=lambda item: (-item[1], ord(item[0]))
     )
 
@@ -50,16 +82,7 @@ def decode(encoded_bin_file, huffman_map_file):
 
     root = build_huffman_tree(sorted_dict)
 
-    # 读取二进制文件并解码
-    with open(encoded_bin_file, 'rb') as binary_file:
-        # 读取前4个字节并转换为整数，以获取字符个数
-        char_count_bytes = binary_file.read(4)
-        char_count = int.from_bytes(char_count_bytes, byteorder='big')
 
-        # 读取剩余的二进制数据
-        encoded_bytes = binary_file.read()
-        # 将每个字节转换为8位二进制字符串
-        encoded_text = ''.join(format(byte, '08b') for byte in encoded_bytes)
 
     decoded_text = ''
     current_node = root
@@ -85,10 +108,9 @@ def save_decoded_text(decoded_text, output_file):
 
 # 使用示例
 encoded_bin_file = 'raw.binary'  # 编码后的二进制文件路径
-huffman_map_file = 'raw.map'  # 霍夫曼编码映射文件路径
 output_file = 'rawdecode.txt'  # 解码后的文件路径
 
-decoded_text = decode(encoded_bin_file, huffman_map_file)
+decoded_text = decode(encoded_bin_file)
 save_decoded_text(decoded_text, output_file)
 print(f'Decoded text saved to {output_file}')
 

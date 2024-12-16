@@ -1,5 +1,6 @@
 import heapq
 import os
+import struct
 from collections import defaultdict, Counter
 from graphviz import Digraph
 
@@ -81,7 +82,7 @@ def huffman_coding(file_path):
 
     huffman_tree = build_huffman_tree(sorted_dict)
     # 可视化霍夫曼树
-    visualize_huffman_tree(huffman_tree, 'Huffman Tree')
+   # visualize_huffman_tree(huffman_tree, 'Huffman Tree')
     huffman_codes = assign_codes_to_characters(huffman_tree)
     encoded_text = encode_text(text, huffman_codes)
 
@@ -94,6 +95,20 @@ def huffman_coding(file_path):
 
     print(f"bits_num:{len(encoded_text)}")
     with open(binary_file_path, 'wb') as binary_file:
+        map_len=len(sorted_dict)
+        packed_len = struct.pack('>H', map_len)
+        binary_file.write(packed_len)  # 写入文件
+        # 遍历字典，将每个键值对写入文件
+        for char, freq in sorted_dict.items():
+            # 将字符打包为一个字节
+            char_byte = struct.pack('I', ord(char))
+            # 将频度打包为两个字节
+            freq_bytes = struct.pack('>H', freq)
+
+            # 将打包后的字符和频度写入文件
+            binary_file.write(char_byte)
+            binary_file.write(freq_bytes)
+
         text_num= sum(item[1] for item in sorted_items)
         print(f"字符数：{text_num}")
         #前4个字节为字符个数
@@ -106,10 +121,10 @@ def huffman_coding(file_path):
 
     #print(decode_text(encoded_text, huffman_tree))
     # 保存霍夫曼编码映射
-    map_file_path = os.path.splitext(file_path)[0] + '.map'
-    write_to_file(map_file_path, str(frequency))
+    # map_file_path = os.path.splitext(file_path)[0] + '.map'
+    # write_to_file(map_file_path, str(frequency))
 
-    return binary_file_path, map_file_path
+    return binary_file_path
 
 
 
@@ -142,9 +157,9 @@ def visualize_huffman_tree(root, tree_name):
 
 if __name__=="__main__":
     txt_file_path = 'raw.txt'  # 你的TXT文件路径
-    binary_file, map_file = huffman_coding(txt_file_path)
+    binary_file = huffman_coding(txt_file_path)
     print(f'Encoded binary file: {binary_file}')
-    print(f'Huffman code map file: {map_file}')
+
 
 
 
